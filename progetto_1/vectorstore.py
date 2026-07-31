@@ -93,6 +93,7 @@ def index_chunks(chunks_with_meta: list[dict]):
                     "text": chunk["text"],
                     "source": chunk["source"],
                     "chunk_id": chunk["chunk_id"],
+                    "page": chunk.get("page"),
                 },
             )
         )
@@ -116,6 +117,7 @@ def search(query: str, top_k: int = 4) -> list[dict]:
         {
             "text": p.payload["text"],
             "source": p.payload["source"],
+            "page": p.payload.get("page"),
             "score": p.score,
         }
         for p in response.points

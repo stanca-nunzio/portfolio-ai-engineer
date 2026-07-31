@@ -47,9 +47,19 @@ def setup_index():
     documents = load_documents(docs_path)
     all_chunks = []
     for doc in documents:
-        pieces = chunk_text(doc["text"], chunk_size=chunk_size, overlap=chunk_overlap)
+        pieces = chunk_text(
+            doc["text"],
+            chunk_size=chunk_size,
+            overlap=chunk_overlap,
+            pages=doc.get("pages"),
+        )
         for i, piece in enumerate(pieces):
-            all_chunks.append({"text": piece, "source": doc["source"], "chunk_id": i})
+            all_chunks.append({
+                "text": piece["text"],
+                "source": doc["source"],
+                "chunk_id": i,
+                "page": piece["page"],
+            })
     index_chunks(all_chunks)
     return len(documents), len(all_chunks)
 
