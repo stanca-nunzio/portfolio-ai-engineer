@@ -24,8 +24,9 @@ with st.expander("Come funziona / stack tecnico"):
         1. I documenti (PDF/Markdown) in `data/` vengono letti e spezzati in chunk
         2. Ogni chunk viene trasformato in un embedding con `all-MiniLM-L6-v2` (locale, gira su CPU)
         3. Gli embedding sono indicizzati in **Qdrant embedded** (in-process, salvato su disco locale — nessun server esterno)
-        4. Alla domanda dell'utente, si cercano i chunk più simili per similarità coseno
-        5. I chunk trovati vengono passati come contesto a **Google Gemini** per generare la risposta finale
+        4. Alla domanda dell'utente, si recuperano i 15 chunk più simili per similarità coseno
+        5. I 15 candidati vengono riordinati da un **cross-encoder** (`ms-marco-MiniLM-L-6-v2`), più preciso della sola similarità coseno, e si tengono i migliori 4
+        6. I chunk finali vengono passati come contesto a **Google Gemini** per generare la risposta finale
         """
     )
 
@@ -99,7 +100,9 @@ if ask_clicked:
 
                     with st.expander("Chunk recuperati (debug)"):
                         for c in contexts:
-                            st.markdown(f"**{c['source']}** (score: {c['score']:.3f})")
+                            page_info = f", pag. {c['page']}" if c.get("page") else ""
+                            rerank_info = f" | re-rank: {c['rerank_score']:.3f}" if "rerank_score" in c else ""
+                            st.markdown(f"**{c['source']}{page_info}** (qdrant score: {c['score']:.3f}{rerank_info})")
                             st.text(c["text"][:300] + ("..." if len(c["text"]) > 300 else ""))
                             st.divider()
             except RuntimeError as e:

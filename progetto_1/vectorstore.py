@@ -6,28 +6,42 @@ import os
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
+
+import streamlit as st
 
 COLLECTION_NAME = "portfolio_docs"
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"  # leggero, ~80MB, gira bene su CPU
+RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # ~80MB, CPU-friendly
 
 _embedder = None
 _client = None
+_reranker = None
 
 
 def _get_qdrant_path() -> str:
     """
     Cerca il path prima nei secrets di Streamlit Cloud (st.secrets),
     poi come variabile d'ambiente, poi fallback su un default locale.
-    Stesso pattern usato in llm.py per GOOGLE_API_KEY.
     """
     try:
-        import streamlit as st
         if "QDRANT_PATH" in st.secrets:
             return os.path.join(st.session_state["ROOT_DIR"], st.secrets["QDRANT_PATH"])
     except Exception:
         pass
     return os.environ.get("QDRANT_PATH", "qdrant_storage")
+
+def _how_many_vectordb_candidates() -> int:
+    """
+    Cerca il path prima nei secrets di Streamlit Cloud (st.secrets),
+    poi come variabile d'ambiente, poi fallback su un default locale.
+    """
+    try:
+        if "RERANK_CANDIDATES" in st.secrets:
+            return st.secrets["RERANK_CANDIDATES"]
+    except Exception:
+        pass
+    return os.environ.get("RERANK_CANDIDATES", 15)
 
 
 def get_embedder() -> SentenceTransformer:
@@ -35,6 +49,13 @@ def get_embedder() -> SentenceTransformer:
     if _embedder is None:
         _embedder = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _embedder
+
+
+def get_reranker() -> CrossEncoder:
+    global _reranker
+    if _reranker is None:
+        _reranker = CrossEncoder(RERANKER_MODEL_NAME)
+    return _reranker
 
 
 def get_client() -> QdrantClient:
@@ -101,19 +122,20 @@ def index_chunks(chunks_with_meta: list[dict]):
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
-def search(query: str, top_k: int = 4) -> list[dict]:
+def search(query: str, top_k: int = 4, use_reranker: bool = True) -> list[dict]:
     ensure_collection()
     client = get_client()
     embedder = get_embedder()
 
     query_vector = embedder.encode([query])[0].tolist()
+    fetch_limit = _how_many_vectordb_candidates() if use_reranker else top_k
     response = client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
-        limit=top_k,
+        limit=fetch_limit,
     )
 
-    return [
+    candidates = [
         {
             "text": p.payload["text"],
             "source": p.payload["source"],
@@ -122,6 +144,19 @@ def search(query: str, top_k: int = 4) -> list[dict]:
         }
         for p in response.points
     ]
+
+    if not use_reranker or not candidates:
+        return candidates[:top_k]
+
+    reranker = get_reranker()
+    pairs = [[query, c["text"]] for c in candidates]
+    rerank_scores = reranker.predict(pairs)
+
+    for c, rerank_score in zip(candidates, rerank_scores):
+        c["rerank_score"] = float(rerank_score)
+
+    candidates.sort(key=lambda c: c["rerank_score"], reverse=True)
+    return candidates[:top_k]
 
 
 def collection_count() -> int:
