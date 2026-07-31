@@ -1,0 +1,8 @@
+streamlit
+
+### Progetto 1
+qdrant-client
+sentence-transformers
+google-genai
+pypdf
+torchvision
