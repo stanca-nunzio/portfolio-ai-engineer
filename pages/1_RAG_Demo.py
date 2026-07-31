@@ -33,11 +33,10 @@ with st.expander("Come funziona / stack tecnico"):
 
 @st.cache_resource(show_spinner="Indicizzazione documenti in corso (una tantum)...")
 def setup_index():
-    root_dir = st.session_state.get("ROOT_DIR")
-    docs_dir = Path(st.secrets["DOCS_DIR"])
     chunk_size = int(st.secrets["CHUNK_SIZE"])
     chunk_overlap = int(st.secrets["CHUNK_OVERLAP"])
 
+    root_dir = st.session_state.get("ROOT_DIR")
     docs_dir = Path(st.secrets["DOCS_DIR"])
 
     docs_path = st.session_state["DOCS_PATH"] = os.path.join(root_dir, docs_dir)
