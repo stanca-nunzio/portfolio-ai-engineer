@@ -1,6 +1,5 @@
 """
-Vector store basato su Qdrant embedded (client Python in-process, NO server esterno).
-Persiste su disco locale nel container -> non serve alcun servizio esterno.
+Vector store basato su Qdrant embedded (client Python in-process, NO server esterno)
 """
 import os
 import uuid
@@ -11,8 +10,9 @@ from sentence_transformers import SentenceTransformer, CrossEncoder
 import streamlit as st
 
 COLLECTION_NAME = "portfolio_docs"
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"  # leggero, ~80MB, gira bene su CPU
-RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # ~80MB, CPU-friendly
+# Modelli leggeri, run su CPU
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 _embedder = None
 _client = None

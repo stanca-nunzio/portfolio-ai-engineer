@@ -1,7 +1,6 @@
 """
 Chiamate all'LLM (Google Gemini) per generare la risposta finale a partire
-dai chunk recuperati da Qdrant. La chiave API va passata come variabile
-d'ambiente GOOGLE_API_KEY (in HF Spaces: Settings > Variables and secrets).
+dai chunk recuperati da Qdrant
 """
 import os
 from google import genai

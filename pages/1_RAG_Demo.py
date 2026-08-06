@@ -12,7 +12,7 @@ from progetto_1.ingest import load_documents, chunk_text
 from progetto_1.vectorstore import index_chunks, search, collection_count
 from progetto_1.llm import generate_answer, get_models
 
-st.title("RAG Demo")
+st.title("RAG")
 st.write(
     "Fai una domanda sui documenti indicizzati. Il sistema cerca i passaggi "
     "più rilevanti tramite ricerca vettoriale e genera una risposta con un LLM."
@@ -21,16 +21,14 @@ st.write(
 with st.expander("Come funziona / stack tecnico"):
     st.markdown(
         """
-        1. I documenti (PDF/Markdown) in `data/` vengono letti e spezzati in chunk
+        1. I documenti (PDF/Markdown) in `data/` vengono letti e spezzati in chunk per paragrafi (i paragrafi troppo lunghi vengono ulteriormente divisi a finestra fissa)
         2. Ogni chunk viene trasformato in un embedding con `all-MiniLM-L6-v2` (locale, gira su CPU)
-        3. Gli embedding sono indicizzati in **Qdrant embedded** (in-process, salvato su disco locale — nessun server esterno)
-        4. Alla domanda dell'utente, si recuperano i 15 chunk più simili per similarità coseno
-        5. I 15 candidati vengono riordinati da un **cross-encoder** (`ms-marco-MiniLM-L-6-v2`), più preciso della sola similarità coseno, e si tengono i migliori 4
+        3. Gli embedding sono indicizzati in **Qdrant embedded** (in-process, salvato su disco locale)
+        4. Alla domanda dell'utente, si recuperano i chunk candidati più simili per similarità coseno (numero configurabile, default 15)
+        5. I candidati vengono riordinati da un **cross-encoder** (`ms-marco-MiniLM-L-6-v2`), più preciso della sola similarità coseno, e si tengono i migliori 4
         6. I chunk finali vengono passati come contesto a **Google Gemini** per generare la risposta finale
         """
     )
-
-
 @st.cache_resource(show_spinner="Indicizzazione documenti in corso (una tantum)...")
 def setup_index():
     chunk_size = int(st.secrets["CHUNK_SIZE"])

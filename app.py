@@ -1,7 +1,5 @@
 """
 Landing page del portfolio: elenca i progetti disponibili.
-Streamlit riconosce automaticamente i file in pages/ come pagine
-aggiuntive della sidebar (multi-page app nativa).
 """
 import os
 from pathlib import Path
@@ -15,9 +13,8 @@ if "ROOT_DIR" not in st.session_state:
 # 1. Definisci gli oggetti pagina (st.Page)
 
 home_page = st.Page("pages/0_Home.py", title="Home", default=True)
-progetto_1_page = st.Page("pages/1_RAG_Demo.py", title="RAG Demo — Retrieval Augmented Generation")
-progetto_2_page = st.Page("pages/2_Demo.py", title="Progetto Due")
+progetto_1_page = st.Page("pages/1_RAG_Demo.py", title="RAG: Retrieval Augmented Generation")
 
-pg = st.navigation([home_page,progetto_1_page, progetto_2_page])
+pg = st.navigation([home_page,progetto_1_page])
 
 pg.run()

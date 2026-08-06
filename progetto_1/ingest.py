@@ -1,6 +1,6 @@
 """
 Lettura ed estrazione testo da file PDF e Markdown nella cartella data/.
-Restituisce una lista di documenti grezzi con metadati minimi (fonte, titolo).
+Restituisce una lista di documenti grezzi con metadati minimi
 """
 from typing import Union
 import os
