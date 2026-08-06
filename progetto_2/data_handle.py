@@ -71,15 +71,22 @@ class DataFrameHandle:
         end: date,
         categories: list[str],
         statuses: list[str],
+        show_outlier:bool = True
     ) -> None:
         """Ricalcola la maschera in base ai filtri scelti nella sidebar."""
         df = self.df_clean
-        self.mask = (
-            (df["order_date"].dt.date >= start)
-            & (df["order_date"].dt.date <= end)
-            & (df["category"].isin(categories))
-            & (df["status"].isin(statuses))
+        mask = (
+                (df["order_date"].dt.date >= start)
+                & (df["order_date"].dt.date <= end)
+                & (df["category"].isin(categories))
+                & (df["status"].isin(statuses))
         )
+
+        # esclude gli outlier
+        if not show_outlier:
+            mask &= ~df["flag_outlier"]
+
+        self.mask = mask
 
     def reset_filters(self) -> None:
         """Rimuove ogni filtro: la maschera torna tutta True."""
