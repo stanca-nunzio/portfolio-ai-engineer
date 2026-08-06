@@ -12,6 +12,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import numpy as np
+
 
 from progetto_2.analysis import (
     kpi_summary, total_by_month, revenue_by_category, top_products,
@@ -78,7 +80,7 @@ def render_business_tab(handle: DataFrameHandle) -> None:
     col_left, col_right = st.columns([2, 1])
 
     with col_left:
-        st.subheader("Andamento fatturato nel tempo")
+        st.subheader("Andamento fatturato nel tempo (ordini consegnati)")
         rev_month = total_by_month(df_f)
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -163,8 +165,8 @@ def render_business_tab(handle: DataFrameHandle) -> None:
         st.subheader("Pattern settimanale")
         wd_df = weekday_pattern(df_f)
         wd_labels_it = {
-            "Monday": "Lun", "Tuesday": "Mar", "Wednesday": "Mer", "Thursday": "Gio",
-            "Friday": "Ven", "Saturday": "Sab", "Sunday": "Dom",
+            "monday": "lun", "tuesday": "mar", "wednesday": "mer", "thursday": "gio",
+            "friday": "ven", "saturday": "sab", "sunday": "dom",
         }
         wd_df = wd_df.copy()
         wd_df["Giorno"] = wd_df["weekday"].map(wd_labels_it)
@@ -209,17 +211,16 @@ def render_stats_tab(handle: DataFrameHandle) -> None:
     col_x, col_y = st.columns(2)
 
     with col_x:
-        st.markdown("#### Distribuzione del totale per ordine")
-        fig = px.histogram(
-            completed, x="total", nbins=50,
-            color_discrete_sequence=[PRIMARY],
+        st.markdown("#### Boxplot totale per status")
+        fig = px.box(
+            df_f,
+            x="status", y="total",
+            color="status", color_discrete_map=STATUS_COLORS,
         )
-        fig.add_vline(x=stats["mean"], line_dash="dash", line_color=ACCENT,
-                       annotation_text="media", annotation_position="bottom")
         fig.update_layout(
             template=PLOTLY_TEMPLATE, height=380,
             margin=dict(l=10, r=10, t=10, b=10),
-            xaxis_title="Totale per ordine (€)", yaxis_title="Frequenza",
+            xaxis_title=None, yaxis_title="Totale (€)", showlegend=False,
         )
         st.plotly_chart(fig, width='stretch')
 
@@ -324,47 +325,120 @@ def render_stats_tab(handle: DataFrameHandle) -> None:
     col_x, col_y = st.columns(2)
 
     with col_x:
-        st.markdown("#### Distribuzione del totale per ordine")
-        fig = px.histogram(
-            completed, x="total", nbins=50,
-            color_discrete_sequence=[PRIMARY],
+        status_rate_by_category = (
+            df_f.groupby(['category', 'status'])
+            .size()
+            .unstack(fill_value=0)
         )
-        fig.add_vline(x=stats["mean"], line_dash="dash", line_color=ACCENT,
-                       annotation_text="media", annotation_position="bottom")
-        fig.update_layout(
-            template=PLOTLY_TEMPLATE, height=380,
+
+        status_rate_by_category_pct = status_rate_by_category.div(
+            status_rate_by_category.sum(axis=1), axis=0
+        ).round(3) * 100
+
+        df_plot = status_rate_by_category_pct.reset_index()
+        df_long = df_plot.melt(
+            id_vars=['category'],
+            var_name='status',
+            value_name='percentage'
+        )
+
+        ordered_cols = [c for c in STATUS_COLORS.keys() if c in status_rate_by_category_pct.columns]
+        other_cols = [c for c in status_rate_by_category_pct.columns if c not in STATUS_COLORS]
+        plot_cols = ordered_cols + other_cols
+
+        fig_bar = px.bar(
+            df_long,
+            x='category',
+            y='percentage',
+            color='status',
+            category_orders={'status': plot_cols},
+            color_discrete_map=STATUS_COLORS,
+            labels={'category': 'Categoria', 'percentage': 'Percentuale (%)', 'status': 'Stato'},
+            hover_data={'category': True, 'status': True, 'percentage': ':.1f'}
+        )
+
+        fig_bar.update_traces(
+            hovertemplate='<b>%{x}</b><br>%{fullData.name}: <b>%{y:.1f}%</b><extra></extra>'
+        )
+
+        fig_bar.update_layout(
+            template=PLOTLY_TEMPLATE,
+            barmode='stack',
+            height=380,
             margin=dict(l=10, r=10, t=10, b=10),
-            xaxis_title="Totale per ordine (€)", yaxis_title="Frequenza",
+            xaxis_title=None,
+            yaxis_title='Percentuale (%)',
+            legend_title_text=None
         )
-        st.plotly_chart(fig, width='stretch')
+
+        st.plotly_chart(fig_bar, width='stretch')
 
     with col_y:
-        st.markdown("#### Boxplot totale per categoria")
-        fig = px.box(
-            completed,
-            x="category", y="total",
-            color="category", color_discrete_sequence=COLOR_SEQUENCE,
+        status_rate_by_payment = (
+            df_f.groupby(['payment_method', 'status'])
+            .size()
+            .unstack(fill_value=0)
         )
-        fig.update_layout(
-            template=PLOTLY_TEMPLATE, height=380,
-            margin=dict(l=10, r=10, t=10, b=10),
-            xaxis_title=None, yaxis_title="Totale (€)", showlegend=False,
-        )
-        st.plotly_chart(fig, width='stretch')
 
+        status_rate_by_payment_pct = status_rate_by_payment.div(
+            status_rate_by_payment.sum(axis=1), axis=0
+        ).round(3) * 100
+
+        df_plot = status_rate_by_payment_pct.reset_index()
+        df_long = df_plot.melt(
+            id_vars=['payment_method'],
+            var_name='status',
+            value_name='percentage'
+        )
+
+        ordered_cols = [c for c in STATUS_COLORS.keys() if c in status_rate_by_payment_pct.columns]
+        other_cols = [c for c in status_rate_by_payment_pct.columns if c not in STATUS_COLORS]
+        plot_cols = ordered_cols + other_cols
+
+        fig_bar = px.bar(
+            df_long,
+            x='payment_method',
+            y='percentage',
+            color='status',
+            category_orders={'status': plot_cols},
+            color_discrete_map=STATUS_COLORS,
+            labels={'payment_method': 'Pagamento', 'percentage': 'Percentuale (%)', 'status': 'Stato'},
+            hover_data={'payment_method': True, 'status': True, 'percentage': ':.1f'}
+        )
+
+        fig_bar.update_traces(
+            hovertemplate='<b>%{x}</b><br>%{fullData.name}: <b>%{y:.1f}%</b><extra></extra>'
+        )
+
+        fig_bar.update_layout(
+            template=PLOTLY_TEMPLATE,
+            barmode='stack',
+            height=380,
+            margin=dict(l=10, r=10, t=10, b=10),
+            xaxis_title=None,
+            yaxis_title='Percentuale (%)',
+            legend_title_text=None
+        )
+
+        st.plotly_chart(fig_bar, width='stretch')
 
     st.markdown("#### Correlazione tra variabili numeriche")
     numeric_cols = ["quantity", "price", "total"]
     corr = df_f[numeric_cols].corr(numeric_only=True)
+
+    mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
+
+    corr_masked = corr.mask(mask)
+
     fig = px.imshow(
-        corr, text_auto=".2f", color_continuous_scale=["#E76F51", "#FFFFFF", PRIMARY],
+        corr_masked, text_auto=".2f", color_continuous_scale=["#E76F51", "#FFFFFF", PRIMARY],
         zmin=-1, zmax=1, aspect="auto",
     )
     fig.update_layout(template=PLOTLY_TEMPLATE, height=380, margin=dict(l=10, r=10, t=10, b=10))
     st.plotly_chart(fig, width='stretch')
 
     st.caption(
-        "Nota: la correlazione tra Quantity e Total è attesa (il totale dipende dalla quantità venduta)."
+        "Nota: le correlazioni tra Quantity-Total e Price-Total sono attese (il totale dipende dalla quantità venduta e dal prezzo del prodotto)."
     )
 
     st.markdown("#### Outlier rilevati (metodo IQR)")
