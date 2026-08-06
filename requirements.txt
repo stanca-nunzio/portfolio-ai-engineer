@@ -6,7 +6,12 @@ sentence-transformers>=5.0.0,<6.0.0
 google-genai>=1.20.0,<2.9.0
 pypdf>=5.0.0,<6.0.0
 
-# --- Blocco torch/torchvision: versioni allineate tra loro (cpu version)
+# Blocco torch/torchvision: versioni allineate tra loro (build CPU-only)
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.6.0
 torchvision==0.21.0
+
+# Progetto 2
+pandas>=2.2.0,<3.0.0
+numpy>=1.26.0,<2.2.0
+plotly>=6.4.0,<7.0.0
