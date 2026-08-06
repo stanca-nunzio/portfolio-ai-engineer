@@ -62,6 +62,7 @@ def load_handle() -> DataFrameHandle:
 
 if "handle" not in st.session_state:
     st.session_state["handle"] = load_handle()
+    st.session_state["_initial_filters_applied"] = False
 
 handle: DataFrameHandle = st.session_state["handle"]
 
@@ -69,7 +70,13 @@ handle: DataFrameHandle = st.session_state["handle"]
 # SIDEBAR — costruita passando l'handle; legge da lì i range/le liste
 # ---------------------------------------------------------------------------
 
-sidebar = Sidebar(handle)
+# Applica i filtri iniziali solo al primo caricamento (dall'inizio dell'anno corrente)
+if not st.session_state["_initial_filters_applied"]:
+    sidebar = Sidebar(handle, apply_initial_filters=True)
+    st.session_state["_initial_filters_applied"] = True
+else:
+    sidebar = Sidebar(handle, apply_initial_filters=False)
+
 did_refresh = sidebar.render()
 
 if did_refresh and handle.is_empty:
