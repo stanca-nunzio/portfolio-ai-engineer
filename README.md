@@ -104,3 +104,98 @@ LLM_MODEL_ASK = "gemini-2.0-flash"
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+
+# Portfolio E-Commerce Sales - Dashboard vendite
+
+Progetto dimostrativo che parte da un CSV di vendite e-commerce (valori mancanti, formati di data misti, duplicati, testo inconsistente)
+e arriva a una dashboard interattiva con analisi statistica e insight di
+business. Fa parte di un portfolio Streamlit multi-pagina.
+
+## Cosa mostra il progetto
+
+Il dataset di partenza contiene i tipici problemi di un export reale:
+prezzi scritti come testo, quantità negative, date in
+due formati diversi, righe duplicate per errore di doppia esportazione,
+totali che non tornano con quantità * prezzo. Il progetto copre l'intera
+pipeline, dalla pulizia dei dati fino alla visualizzazione:
+
+1. **Cleaning**: normalizzazione, correzione e validazione dei dati grezzi
+2. **Analisi**: KPI di business, statistiche descrittive, correlazioni
+3. **Dashboard**: grafici interattivi filtrabili per periodo, categoria e stato ordine
+
+## Architettura
+
+```
+resources/messy_ecommerce_sales_data.csv   dataset grezzo
+        |
+        v
+progetto_2/cleaning.py           pipeline di pulizia (12+ step)
+        |
+        v
+progetto_2/data_handle.py        DataFrameHandle: stato dati + filtri
+        |
+        v
+progetto_2/analysis.py           KPI, aggregazioni, statistiche
+        |
+        v
+progetto_2/view_sidebar.py       filtri (periodo, categoria, stato)
+progetto_2/view_panels.py        3 tab: Business, Statistiche, Dati
+        |
+        v
+pages/2_ETA_Market.py            entry point della pagina Streamlit
+```
+
+## La pipeline di cleaning, passo per passo
+
+`clean_dataset` in `cleaning.py` esegue in ordine:
+
+- Normalizza nomi colonna e verifica che quelle richieste siano presenti
+- Pulisce testo nelle colonne categoriche (trim, case, valori vuoti -> NaN)
+- Converte prezzi testuali in numeri
+- Imputa `quantity` mancante con 1
+- Corregge quantità e totali negativi (valore assoluto)
+- Ricalcola `total` da `quantity * price` dove il valore dichiarato è incoerente o mancante, e scarta le righe non recuperabili
+- Fa il parsing delle date nei due formati presenti nel dataset
+- Rimuove duplicati sullo stesso `order_id`
+- Marca (senza eliminare) gli outlier su quantity/price con il metodo IQR
+- Scarta le righe senza campi essenziali
+- Aggiunge colonne derivate (`year_month`, `weekday`) per le analisi temporali
+
+Il risultato è un dataframe pulito più un report con le metriche prima/dopo, consultabile nel tab Dati.
+
+## Filtri e stato
+
+`DataFrameHandle` tiene insieme dataframe grezzo, dataframe pulito e una
+maschera booleana per i filtri correnti. La sidebar scrive i valori scelti
+in `st.session_state` come bozza; solo al click su "Applica" la maschera
+viene ricalcolata e i pannelli si aggiornano. "Reset" riporta tutto allo
+stato iniziale (nessun filtro).
+
+## I tre tab della dashboard
+
+- **Business Insights**: KPI (fatturato, ordini, valore medio, clienti
+  unici, tasso reso/cancellazione), andamento nel tempo per status,
+  fatturato per categoria, top prodotti e clienti, pattern settimanale,
+  metodo di pagamento
+- **Analisi statistica**: media/mediana/deviazione standard/skewness sul
+  totale ordine, distribuzione e boxplot per categoria, andamento ordini
+  per stato, matrice di correlazione, tabella outlier rilevati
+- **Dati**: dataset pulito filtrato (scaricabile in CSV) oppure dataset
+  grezzo originale, per confronto
+
+## Configurazione
+
+Le variabili richieste vanno messe in `.streamlit/secrets.toml`:
+
+```toml
+RES_DIR = "resources"
+PROGETTO_2_CSV = "messy_ecommerce_sales_data.csv"
+```
+
+## Avvio in locale
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
