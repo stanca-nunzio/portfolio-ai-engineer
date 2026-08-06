@@ -18,6 +18,7 @@ from progetto_2.data_handle import DataFrameHandle
 
 _KEY_DATE = "filter_date_range"
 _KEY_CATEGORY = "filter_categories"
+_KEY_CHECK_SHOW_OUTLIER = "filter_outlier"
 _KEY_status = "filter_statuses"
 _KEY_RESET_FLAG = "_reset_filters_requested"
 
@@ -33,10 +34,10 @@ class Sidebar:
     def _init_state(self) -> None:
         """Popola session_state con i default solo la prima volta."""
         min_d, max_d = self.handle.date_bounds
-        st.session_state.setdefault(_KEY_DATE, (min_d, max_d))
         start_default = date(max_d.year, 1, 1)
 
         st.session_state.setdefault(_KEY_DATE, (start_default, max_d))
+        st.session_state.setdefault(_KEY_CHECK_SHOW_OUTLIER, False)
         st.session_state.setdefault(_KEY_CATEGORY, self.handle.categories)
         st.session_state.setdefault(_KEY_status, self.handle.order_statuses)
 
@@ -65,6 +66,8 @@ class Sidebar:
             max_value=max_d,
             key=_KEY_DATE,
         )
+        st.sidebar.checkbox("Mostra outlier", key=_KEY_CHECK_SHOW_OUTLIER, on_change=self._toggle_outlier, args=(_KEY_CHECK_SHOW_OUTLIER,))
+
         st.sidebar.multiselect("Categoria", self.handle.categories, key=_KEY_CATEGORY)
         st.sidebar.multiselect("Stato ordine", self.handle.order_statuses, key=_KEY_status)
 
@@ -92,8 +95,17 @@ class Sidebar:
         return False
 
     # ------------------------------------------------------------------
+    def _toggle_outlier(self, component_name) -> None:
+        is_activate = st.session_state[component_name]
+
+        if component_name==_KEY_CHECK_SHOW_OUTLIER:
+            self._apply()
+
     def _apply(self) -> None:
         date_range = st.session_state[_KEY_DATE]
+
+        show_outlier = st.session_state[_KEY_CHECK_SHOW_OUTLIER]
+
         min_d, max_d = self.handle.date_bounds
         if isinstance(date_range, tuple) and len(date_range) == 2:
             start, end = date_range
@@ -105,6 +117,7 @@ class Sidebar:
             end=end,
             categories=st.session_state[_KEY_CATEGORY],
             statuses=st.session_state[_KEY_status],
+            show_outlier=show_outlier
         )
 
     def _reset_callback(self) -> None:
