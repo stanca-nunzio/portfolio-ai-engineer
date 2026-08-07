@@ -41,7 +41,7 @@ def total_by_month(df: pd.DataFrame, only_completed: bool = True) -> pd.DataFram
         group_cols = ["year_month", "status"] # Raggruppa anche per status
 
     return (
-        orders.groupby(group_cols, as_index=False)
+        orders.groupby(group_cols, as_index=False, observed=True)
         .agg(total=("total", "sum"), orders=("order_id", "nunique"))
         .sort_values("year_month")
     )

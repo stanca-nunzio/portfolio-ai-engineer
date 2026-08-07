@@ -60,6 +60,11 @@ def load_handle() -> DataFrameHandle:
 
     return DataFrameHandle.from_csv(st.session_state["CSV_PATH"])
 
+
+if "ROOT_DIR" not in st.session_state:
+    st.session_state["ROOT_DIR"] = Path(__file__).resolve().parent.parent
+
+
 if "handle" not in st.session_state:
     st.session_state["handle"] = load_handle()
     st.session_state["_initial_filters_applied"] = False
@@ -113,3 +118,4 @@ with tab_data:
     view_panels.render_data_tab(handle)
 
 st.divider()
+st.page_link("pages/0_Home.py", label="Torna alla lista progetti")
