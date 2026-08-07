@@ -4,6 +4,7 @@ Progetto dimostrativo che mostra come costruire un sistema di domande e
 risposte su documenti (PDF/Markdown) usando ricerca semantica e un LLM.
 Fa parte di un portfolio Streamlit multi-pagina.
 
+
 ## Cos'è un RAG, in breve
 
 Un LLM può rispondere solo con quello che sa dal training, quindi non
@@ -33,7 +34,7 @@ progetto_1/ingest.py        estrazione testo + chunking a finestra scorrevole
 progetto_1/vectorstore.py   embedding (sentence-transformers) + Qdrant embedded
         |
         v
-pages/1_RAG_Demo.py         UI Streamlit: domanda utente -> ricerca -> risposta
+pages/1_RAG.py         UI Streamlit: domanda utente -> ricerca -> risposta
         |
         v
 progetto_1/llm.py           chiamata a Google Gemini con contesto recuperato
@@ -41,7 +42,7 @@ progetto_1/llm.py           chiamata a Google Gemini con contesto recuperato
 
 ## Come funziona il flusso, passo per passo
 
-1. All'avvio della pagina RAG Demo, `setup_index()` (decorata con
+1. All'avvio della pagina RAG, `setup_index()` (decorata con
    `st.cache_resource`, quindi eseguita una sola volta per sessione del
    server) legge tutti i file da `data/` con `load_documents`.
 2. Ogni documento viene spezzato in chunk da `chunk_text` (finestra

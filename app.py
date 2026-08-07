@@ -13,7 +13,7 @@ if "ROOT_DIR" not in st.session_state:
 # 1. Definisci gli oggetti pagina (st.Page)
 
 home_page = st.Page("pages/0_Home.py", title="Home", default=True)
-progetto_1_page = st.Page("pages/1_RAG_Demo.py", title="RAG: Retrieval Augmented Generation")
+progetto_1_page = st.Page("pages/1_RAG.py", title="RAG: Retrieval Augmented Generation")
 
 pg = st.navigation([home_page,progetto_1_page])
 

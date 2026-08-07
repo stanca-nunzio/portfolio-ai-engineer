@@ -15,15 +15,15 @@ st.subheader("Progetti disponibili")
 
 projects = [
     {
-        "title": "RAG Demo — Retrieval Augmented Generation",
+        "title": "RAG — Retrieval Augmented Generation",
         "description": (
             "Sistema di domande e risposte su documenti (PDF/Markdown) "
             "usando ricerca semantica su vector database ed un LLM per "
             "generare la risposta finale."
         ),
         "stack": "Streamlit - Qdrant (embedded) - sentence-transformers - Google Gemini",
-        "page": "pages/1_RAG_Demo.py",
-        "page_label": "RAG Demo",
+        "page": "pages/1_RAG.py",
+        "page_label": "RAG",
     },
 ]
 
