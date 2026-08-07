@@ -25,6 +25,17 @@ projects = [
         "page": "pages/1_RAG.py",
         "page_label": "RAG",
     },
+    {
+        "title": "E-Commerce Sales Dashboard",
+        "description": (
+            "Pipeline end-to-end su dati di vendita e-commerce: pulizia "
+            "di un dataset sporco, analisi statistica e dashboard "
+            "interattiva per esplorare vendite, andamenti e metriche di business."
+        ),
+        "stack": "Streamlit - Pandas - Plotly",
+        "page": "pages/2_ETA_Market.py",
+        "page_label": "Dashboard",
+    },
 ]
 
 for project in projects:
