@@ -4,6 +4,32 @@ Progetto dimostrativo che mostra come costruire un sistema di domande e
 risposte su documenti (PDF/Markdown) usando ricerca semantica e un LLM.
 Fa parte di un portfolio Streamlit multi-pagina.
 
+## Dati e fonti
+
+Al primo avvio, se la cartella `data/` è vuota, l'app scarica automaticamente
+alcuni documenti di esempio da [data.europa.eu](https://data.europa.eu) (il
+portale ufficiale dei dati aperti dell'Unione Europea), per popolare l'indice
+RAG con contenuti reali su cui fare domande. L'elenco dei documenti scaricati
+è configurabile in `documents.json`.
+
+Documenti attualmente inclusi:
+
+- [Data Spaces Panel Report](https://data.europa.eu/sites/default/files/report/Data_Spaces_Panel_Report_EN.pdf)
+- [Re-using Open Data](https://data.europa.eu/sites/default/files/re-using_open_data.pdf)
+- [Citizen-generated data on data.europa.eu](https://data.europa.eu/sites/default/files/report/data.europa.eu_Report_Citizen-generateddataondata_europa_eu.pdf)
+
+© European Union, [data.europa.eu](https://data.europa.eu). Documenti
+riutilizzati ai sensi della [Creative Commons Attribution 4.0 International
+(CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), la licenza di
+default adottata da data.europa.eu salvo diversa indicazione sulla singola
+pagina di pubblicazione. Nell'app, la fonte di ogni documento scaricato
+automaticamente è indicata anche nella tab "Files", sotto l'anteprima del
+file.
+
+Questi documenti sono usati esclusivamente a scopo dimostrativo, per mostrare
+il funzionamento della pipeline RAG (chunking, embedding, retrieval,
+generazione) su contenuti testuali reali; non rappresentano un'analisi o
+un'elaborazione ufficiale dei report citati.
 
 ## Cos'è un RAG, in breve
 
@@ -61,8 +87,7 @@ progetto_1/llm.py           chiamata a Google Gemini con contesto recuperato
 
 ## Configurazione
 
-Le variabili richieste vanno messe in `.streamlit/secrets.toml` (o come
-variabili d'ambiente in locale):
+Le variabili richieste vanno messe in `.streamlit/secrets.toml`:
 
 ```toml
 DOCS_DIR = "data"
