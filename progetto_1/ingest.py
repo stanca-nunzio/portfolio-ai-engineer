@@ -6,9 +6,14 @@ from typing import Union
 import os
 import re
 import json
+import logging
 import urllib.request
 from pathlib import Path
 from pypdf import PdfReader
+
+# pypdf logga a livello WARNING quando incontra xref table malformate
+# ("Ignoring wrong pointing object...")
+logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 SUPPORTED_SUFFIXES = (".pdf", ".md", ".markdown", ".txt")
 
