@@ -5,10 +5,85 @@ Restituisce una lista di documenti grezzi con metadati minimi
 from typing import Union
 import os
 import re
+import json
+import urllib.request
 from pathlib import Path
 from pypdf import PdfReader
 
 SUPPORTED_SUFFIXES = (".pdf", ".md", ".markdown", ".txt")
+
+# File di stato scritto dal codice dentro data/: tiene traccia di quali file
+# sono stati scaricati automaticamente e da dove, usato solo per mostrare
+# l'attribuzione della fonte in preview_file.
+SOURCES_METADATA_FILE = "sources.json"
+
+
+def _load_seed_documents(seed_file_path) -> list[dict]:
+    if not seed_file_path.exists():
+        return []
+    try:
+        return json.loads(seed_file_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[ingest] errore leggendo {seed_file_path}: {e}")
+        return []
+
+
+def _load_sources_metadata(dir: Path) -> dict:
+    meta_path = dir / SOURCES_METADATA_FILE
+    if not meta_path.exists():
+        return {}
+    try:
+        return json.loads(meta_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _save_sources_metadata(dir: Path, metadata: dict) -> None:
+    meta_path = dir / SOURCES_METADATA_FILE
+    meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def ensure_seed_documents(dir: Union[Path, str], seed_file: Union[Path, str]) -> None:
+    """
+    Se dir non contiene ancora nessun file supportato, scarica i documenti
+    elencati in seed_file (documents.json) e ne registra url + fonte in sources.json
+    (dentro dir), così la preview può mostrare l'attribuzione corretta.
+    """
+    if isinstance(dir, str):
+        dir = Path(dir)
+
+    if isinstance(seed_file, str):
+        seed_file = Path(seed_file)
+
+    dir.mkdir(parents=True, exist_ok=True)
+
+    already_has_files = any(
+        p.is_file() and p.suffix.lower() in SUPPORTED_SUFFIXES for p in dir.rglob("*")
+    )
+    if already_has_files:
+        return
+
+    seed_documents = _load_seed_documents(seed_file)
+    if not seed_documents:
+        return
+
+    metadata = _load_sources_metadata(dir)
+
+    for seed in seed_documents:
+        url = seed.get("url")
+        source_label = seed.get("source", "")
+        if not url:
+            continue
+
+        filename = url.rsplit("/", 1)[-1]
+        dest = dir / filename
+        try:
+            urllib.request.urlretrieve(url, dest)
+            metadata[filename] = {"url": url, "source": source_label}
+        except Exception as e:
+            print(f"[ingest] impossibile scaricare {url}: {e}")
+
+    _save_sources_metadata(dir, metadata)
 
 def read_pdf(path: Path) -> list[dict]:
     """
@@ -89,10 +164,12 @@ def list_source_files(dir: Union[Path, str]) -> list[dict]:
     return files
 
 
-def preview_file(path: Path, max_chars: int = 3000) -> str:
+def preview_file(path: Path, max_chars: int = 2000) -> str:
     """
     Estrae il testo di un singolo file per sola anteprima (no chunking/indicizzazione).
     Per i PDF concatena le pagine finché non si supera max_chars.
+    Se il file è tra quelli scaricati automaticamente (vedi sources.json),
+    aggiunge in coda l'attribuzione della fonte.
     """
     suffix = path.suffix.lower()
     if suffix == ".pdf":
@@ -113,8 +190,16 @@ def preview_file(path: Path, max_chars: int = 3000) -> str:
 
     text = text.strip()
     if len(text) > max_chars:
-        return text[:max_chars] + "\n\n[...anteprima troncata...]"
-    return text
+        preview = text[:max_chars] + "\n\n[...anteprima troncata...]"
+    else:
+        preview = text
+
+    metadata = _load_sources_metadata(path.parent)
+    source_info = metadata.get(path.name)
+    if source_info:
+        preview += f"\n\n[Fonte: {source_info['url']} - © {source_info['source']}]"
+
+    return preview
 
 
 def _split_paragraphs(text: str) -> list[str]:

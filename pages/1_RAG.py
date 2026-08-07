@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import streamlit as st
 
-from progetto_1.ingest import load_documents, chunk_text, list_source_files, preview_file
+from progetto_1.ingest import load_documents, chunk_text, list_source_files, preview_file, ensure_seed_documents
 from progetto_1.vectorstore import index_chunks, search, collection_count
 from progetto_1.llm import generate_answer, get_models
 
@@ -38,10 +38,16 @@ def setup_index():
 
     root_dir = st.session_state.get("ROOT_DIR")
     docs_dir = Path(st.secrets["DOCS_DIR"])
+    res_dir = Path(st.secrets["RES_DIR"])
 
     docs_path = st.session_state["DOCS_PATH"] = os.path.join(root_dir, docs_dir)
+    res_path = st.session_state["RES_PATH"] = os.path.join(root_dir, res_dir)
+    seed_file = os.path.join(res_path, 'documents.json')
+
+    ensure_seed_documents(docs_path, seed_file)
 
     documents = load_documents(docs_path)
+
     all_chunks = []
     for doc in documents:
         pieces = chunk_text(
@@ -126,9 +132,14 @@ with tab_files:
 
         target = st.session_state.get("files_preview_target")
         if target:
+            try:
+                max_chars = int(st.secrets["PREVIEW_FILE_MAX_CHARS"])
+            except Exception:
+                max_chars = 2000
+
             st.divider()
             st.markdown(f"**Anteprima: {target}**")
-            preview_text = preview_file(docs_path / target)
+            preview_text = preview_file(docs_path / target, max_chars = max_chars)
             if preview_text:
                 st.text(preview_text)
             else:
