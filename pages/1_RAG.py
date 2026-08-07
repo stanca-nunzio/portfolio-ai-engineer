@@ -33,6 +33,9 @@ with st.expander("Come funziona / stack tecnico"):
 
 @st.cache_resource(show_spinner="Indicizzazione documenti in corso (una tantum)...")
 def setup_index():
+    if "ROOT_DIR" not in st.session_state:
+        st.session_state["ROOT_DIR"] = Path(__file__).resolve().parent.parent
+
     chunk_size = int(st.secrets["CHUNK_SIZE"])
     chunk_overlap = int(st.secrets["CHUNK_OVERLAP"])
 
@@ -113,7 +116,14 @@ with tab_chat:
                     st.error(str(e))
 
 with tab_files:
+    if 'DOCS_PATH' not in st.session_state:
+        root_dir = st.session_state.get("ROOT_DIR")
+        docs_dir = Path(st.secrets["DOCS_DIR"])
+
+        st.session_state["DOCS_PATH"] = os.path.join(root_dir, docs_dir)
+
     docs_path = Path(st.session_state["DOCS_PATH"])
+
     files = list_source_files(docs_path)
 
     if not files:
