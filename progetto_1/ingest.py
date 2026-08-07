@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from pypdf import PdfReader
 
+SUPPORTED_SUFFIXES = (".pdf", ".md", ".markdown", ".txt")
+
 def read_pdf(path: Path) -> list[dict]:
     """
     Ritorna una lista di {"text": ..., "page": numero_pagina} per pagina,
@@ -60,6 +62,59 @@ def load_documents(dir:Union[Path|str]) -> list[dict]:
             docs.append({"source": path.name, "text": text, "pages": pages})
 
     return docs
+
+
+def list_source_files(dir: Union[Path, str]) -> list[dict]:
+    """
+    Scansiona dir (ricorsivamente) e ritorna solo i metadati dei file
+    supportati, senza estrarne il contenuto: {"name", "rel_path", "suffix", "size_kb"}.
+    Pensata per popolare la tab "Files" senza dover rileggere/parsare tutto.
+    """
+    if isinstance(dir, str):
+        dir = Path(dir)
+
+    files = []
+    if not dir.exists():
+        return files
+
+    for path in sorted(dir.rglob("*")):
+        if path.is_dir() or path.suffix.lower() not in SUPPORTED_SUFFIXES:
+            continue
+        files.append({
+            "name": path.name,
+            "rel_path": str(path.relative_to(dir)),
+            "suffix": path.suffix.lower(),
+            "size_kb": round(path.stat().st_size / 1024, 1),
+        })
+    return files
+
+
+def preview_file(path: Path, max_chars: int = 3000) -> str:
+    """
+    Estrae il testo di un singolo file per sola anteprima (no chunking/indicizzazione).
+    Per i PDF concatena le pagine finché non si supera max_chars.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        reader = PdfReader(str(path))
+        parts = []
+        total_len = 0
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            parts.append(page_text)
+            total_len += len(page_text)
+            if total_len >= max_chars:
+                break
+        text = "\n\n".join(parts)
+    elif suffix in (".md", ".markdown", ".txt"):
+        text = read_markdown(path)
+    else:
+        return ""
+
+    text = text.strip()
+    if len(text) > max_chars:
+        return text[:max_chars] + "\n\n[...anteprima troncata...]"
+    return text
 
 
 def _split_paragraphs(text: str) -> list[str]:
