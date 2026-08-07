@@ -6,8 +6,8 @@ from typing import Union
 import os
 import re
 import json
-import logging
 import urllib.request
+import logging
 from pathlib import Path
 from pypdf import PdfReader
 
