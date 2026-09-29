@@ -54,16 +54,16 @@ dover riaddestrare nessun modello.
 data/                      documenti sorgente (PDF, Markdown)
         |
         v
-progetto_1/ingest.py        estrazione testo + chunking a finestra scorrevole
+rag_system/ingest.py        estrazione testo + chunking a finestra scorrevole
         |
         v
-progetto_1/vectorstore.py   embedding (sentence-transformers) + Qdrant embedded
+rag_system/vectorstore.py   embedding (sentence-transformers) + Qdrant embedded
         |
         v
 pages/1_RAG.py         UI Streamlit: domanda utente -> ricerca -> risposta
         |
         v
-progetto_1/llm.py           chiamata a Google Gemini con contesto recuperato
+rag_system/llm.py           chiamata a Google Gemini con contesto recuperato
 ```
 
 ## Come funziona il flusso, passo per passo
@@ -130,17 +130,17 @@ pipeline, dalla pulizia dei dati fino alla visualizzazione:
 resources/messy_ecommerce_sales_data.csv   dataset grezzo
         |
         v
-progetto_2/cleaning.py           pipeline di pulizia (12+ step)
+eta_dashboard/cleaning.py           pipeline di pulizia (12+ step)
         |
         v
-progetto_2/data_handle.py        DataFrameHandle: stato dati + filtri
+eta_dashboard/data_handle.py        DataFrameHandle: stato dati + filtri
         |
         v
-progetto_2/analysis.py           KPI, aggregazioni, statistiche
+eta_dashboard/analysis.py           KPI, aggregazioni, statistiche
         |
         v
-progetto_2/view_sidebar.py       filtri (periodo, categoria, stato)
-progetto_2/view_panels.py        3 tab: Business, Statistiche, Dati
+eta_dashboard/view_sidebar.py       filtri (periodo, categoria, stato)
+eta_dashboard/view_panels.py        3 tab: Business, Statistiche, Dati
         |
         v
 pages/2_ETA_Market.py            entry point della pagina Streamlit
@@ -190,7 +190,7 @@ Le variabili richieste vanno messe in `.streamlit/secrets.toml`:
 
 ```toml
 RES_DIR = "resources"
-PROGETTO_2_CSV = "messy_ecommerce_sales_data.csv"
+ETA_DASHBOARD_CSV = "messy_ecommerce_sales_data.csv"
 ```
 
 ## Avvio in locale
