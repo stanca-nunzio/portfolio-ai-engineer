@@ -106,6 +106,105 @@ streamlit run app.py
 ```
 
 
+
+# Portfolio Compliance - Toolkit GDPR / EU AI Act
+
+Progetto dimostrativo che guida l'utente nella classificazione di un sistema
+di intelligenza artificiale secondo il risk-tiering dell'EU AI Act
+(Regolamento UE 2024/1689) e nella verifica dei requisiti minimi di
+conformità, fino alla produzione di un report di documentazione del rischio.
+Fa parte di un portfolio Streamlit multi-pagina.
+
+> **Nota**: strumento didattico/organizzativo, realizzato a scopo
+> dimostrativo (AI governance & risk documentation). Non costituisce parere
+> legale e non sostituisce una valutazione di conformità condotta da
+> professionisti.
+
+## Cosa mostra il progetto
+
+Un wizard in 4 passi che replica, in forma semplificata, il ragionamento di
+un referente compliance davanti a un nuovo sistema AI:
+
+1. **Descrizione**: nome del sistema, ruolo dell'utente (Provider, Deployer o
+   entrambi), descrizione funzionale, compilatore
+2. **Classificazione**: domande di screening che seguono l'albero decisionale
+   del Regolamento, dal livello più grave al meno grave
+3. **Checklist**: requisiti minimi (GDPR, data governance, trasparenza, human
+   oversight) filtrati in base al livello di rischio individuato
+4. **Report**: documento di documentazione del rischio, visualizzabile
+   nell'app e scaricabile in Markdown
+
+## Livelli di rischio
+
+L'ordine delle domande di screening rispecchia la gerarchia del Regolamento:
+
+| Livello | Riferimento | Esito |
+|---|---|---|
+| Rischio inaccettabile (VIETATO) | Art. 5 | Pratica vietata: la checklist non viene proposta |
+| Rischio alto (High-Risk) | Art. 6, Allegato III | Checklist completa dei requisiti |
+| Rischio limitato | Art. 50 | Obblighi di trasparenza |
+| Rischio minimo/nullo | - | Nessun obbligo specifico dal Regolamento |
+
+La deroga per le funzioni puramente accessorie/procedurali (Art. 6(3)) è
+offerta come opzione ma **non viene mai applicata automaticamente**: va
+sempre validata legalmente e non si applica ai sistemi che profilano persone
+fisiche.
+
+## Architettura
+
+```
+eu_ai_act_toolkit/classification.py   domande di screening (Art. 5, Allegato III,
+        |                             Art. 50) + funzione classify()
+        v
+eu_ai_act_toolkit/checklists.py       checklist dei requisiti, filtrabili per
+        |                             livello di rischio (filter_applicable)
+        v
+eu_ai_act_toolkit/report.py           generate_markdown_report
+        |
+        v
+pages/3_AI_Act_Toolkit.py             entry point della pagina Streamlit
+                                      (wizard a 4 step)
+```
+
+## Come funziona il flusso, passo per passo
+
+1. **Step 1**: l'utente inserisce nome, ruolo e descrizione del sistema. Il
+   nome è obbligatorio per proseguire.
+2. **Step 2**: tre gruppi di domande, con checkbox: pratiche vietate
+   (Art. 5), aree ad alto rischio (Allegato III, più la deroga Art. 6(3)) e
+   trigger di trasparenza (Art. 50). Al click su "Classifica", `classify`
+   restituisce livello, articoli applicabili, motivazione e criteri
+   rilevati.
+3. **Step 3**: viene mostrato il livello di rischio con la sua motivazione.
+   Se il sistema è vietato la checklist è bloccata; altrimenti compaiono i
+   soli requisiti applicabili al livello, marcati come essenziali (🔴) o
+   consigliati (🔵). Una metrica riassume la copertura complessiva
+   (requisiti soddisfatti / applicabili).
+4. **Step 4**: `generate_markdown_report` compone il report a partire da
+   descrizione, classificazione e risposte alla checklist; l'utente può
+   leggerlo nella pagina e scaricarlo come file `.md`. Il pulsante "Nuova
+   valutazione" azzera lo stato.
+
+Lo stato del wizard (step corrente, risposte, risultato della
+classificazione) è tenuto in `st.session_state`. La navigazione dalla
+sidebar usa callback `on_click`, così il pulsante dello step corrente risulta
+sempre disabilitato correttamente.
+
+## Configurazione
+
+Il progetto non richiede secrets né chiavi API: la classificazione e le
+checklist sono regole deterministiche definite in codice, senza chiamate a
+LLM.
+
+## Avvio in locale
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+
+
 # Portfolio E-Commerce Sales - Dashboard vendite
 
 Progetto dimostrativo che parte da un CSV di vendite e-commerce (valori mancanti, formati di data misti, duplicati, testo inconsistente)
