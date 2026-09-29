@@ -26,6 +26,17 @@ projects = [
         "page_label": "RAG",
     },
     {
+        "title": "EU AI ACT Toolkit",
+        "description": (
+            "NON costituisce parere legale, è uno strumento didattico di "
+            "supporto pensato per orientare una prima autovalutazione interna "
+            "tramite step guidati "
+        ),
+        "stack": "Streamlit",
+        "page": "pages/3_EU_AI_Toolkit.py",
+        "page_label": "Toolkit",
+    },
+    {
         "title": "E-Commerce Sales Dashboard",
         "description": (
             "Pipeline end-to-end su dati di vendita e-commerce: pulizia "
