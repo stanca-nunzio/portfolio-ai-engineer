@@ -8,9 +8,9 @@ import os
 from pathlib import Path
 import streamlit as st
 
-from progetto_1.ingest import load_documents, chunk_text, list_source_files, preview_file, ensure_seed_documents
-from progetto_1.vectorstore import index_chunks, search, collection_count
-from progetto_1.llm import generate_answer, get_models
+from rag_system.ingest import load_documents, chunk_text, list_source_files, preview_file, ensure_seed_documents
+from rag_system.vectorstore import index_chunks, search, collection_count
+from rag_system.llm import generate_answer, get_models
 
 st.title("RAG")
 st.write(

@@ -14,7 +14,7 @@ from datetime import date
 
 import streamlit as st
 
-from progetto_2.data_handle import DataFrameHandle
+from eta_dashboard.data_handle import DataFrameHandle
 
 _KEY_DATE = "filter_date_range"
 _KEY_CATEGORY = "filter_categories"

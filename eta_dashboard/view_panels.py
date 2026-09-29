@@ -15,12 +15,12 @@ import streamlit as st
 import numpy as np
 
 
-from progetto_2.analysis import (
+from eta_dashboard.analysis import (
     kpi_summary, total_by_month, revenue_by_category, top_products,
     top_customers, payment_method_split, order_status_split,
     weekday_pattern, revenue_stats, stats_completed_orders
 )
-from progetto_2.data_handle import DataFrameHandle
+from eta_dashboard.data_handle import DataFrameHandle
 
 PRIMARY = "#2A6F97"
 ACCENT = "#F2A65A"

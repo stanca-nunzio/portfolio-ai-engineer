@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from progetto_2.cleaning import clean_dataset
+from eta_dashboard.cleaning import clean_dataset
 
 
 @dataclass

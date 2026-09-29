@@ -8,9 +8,9 @@ from pathlib import Path
 
 import streamlit as st
 
-from progetto_2.data_handle import DataFrameHandle
-from progetto_2.view_sidebar import Sidebar
-from progetto_2 import view_panels
+from eta_dashboard.data_handle import DataFrameHandle
+from eta_dashboard.view_sidebar import Sidebar
+from eta_dashboard import view_panels
 
 # ---------------------------------------------------------------------------
 # CONFIG & STYLE
@@ -56,7 +56,7 @@ def load_handle() -> DataFrameHandle:
     res_dir = Path(st.secrets["RES_DIR"])
 
     res_path = st.session_state["RES_PATH"] = os.path.join(root_dir, res_dir)
-    st.session_state["CSV_PATH"] = os.path.join(res_path, st.secrets["PROGETTO_2_CSV"])
+    st.session_state["CSV_PATH"] = os.path.join(res_path, st.secrets["ETA_DASHBOARD_CSV"])
 
     return DataFrameHandle.from_csv(st.session_state["CSV_PATH"])
 
