@@ -104,6 +104,112 @@ LLM_MODEL_ASK = "gemini-2.0-flash"
 pip install -r requirements.txt
 streamlit run app.py
 ```
+# Portfolio LangGraph - Assistente di scrittura con scaletta interattiva
+
+Progetto dimostrativo che mostra come costruire un agente con **LangGraph** e
+**Google Gemini** in cui l'utente resta nel ciclo (human-in-the-loop): il
+modello propone una scaletta, l'utente la modifica a piacere e solo dopo la sua
+approvazione viene scritto il testo completo. Ogni passaggio è protetto da
+controlli di sicurezza. Fa parte di un portfolio Streamlit multi-pagina.
+
+> **Nota**: i guardrail riducono i rischi ma nessuno è perfetto da solo. Il
+> progetto è dimostrativo e i testi generati da un modello di IA vanno sempre
+> verificati prima di essere usati.
+
+## Cosa mostra il progetto
+
+1. **Grafo con pause**: il flusso si ferma in attesa dell'utente (`interrupt`)
+   e riparte con la sua scelta, grazie a un checkpointer che conserva lo stato
+2. **Più modelli con ruoli diversi**: Guardia, Outliner e Writer hanno system
+   prompt e temperature dedicati
+3. **Guardrail a più livelli**: limiti di input, moderazione con output
+   strutturato, regole nei prompt, safety settings nativi di Gemini
+4. **UI in streaming**: la pagina Streamlit mostra in tempo reale i passaggi
+   del grafo, compresi i controlli di sicurezza
+
+## I ruoli
+
+| Ruolo | Temperatura | Compito |
+|---|---|---|
+| Guardia | 0 | Moderatore: valuta la richiesta prima di ogni elaborazione e il testo finale prima di mostrarlo |
+| Outliner | 0.4 | Crea la scaletta (4-8 sezioni) e la aggiorna in base alle richieste dell'utente |
+| Writer | 0.6 | Scrive il testo completo seguendo fedelmente la scaletta approvata |
+
+## Architettura
+
+```
+langgraph_agents/graph.py    grafo LangGraph: nodi, routing, guardrail,
+        |                    funzioni start_session / resume_session
+        v
+pages/4_LangGraph.py         UI Streamlit: prompt, modifica scaletta, testo finale
+```
+
+Il grafo, con due pause per l'utente:
+
+```
+START -> guard_input -(ok)-> outliner -> review   (PAUSA: l'utente decide)
+             |                              |
+        (bloccato)                  "refine" -> guard_input -> outliner -> review ...
+             v                              |
+        END / review                "write"  -> writer -> guard_output -> END
+```
+
+## Guardrail
+
+1. **Limiti**: massimo 2000 caratteri per prompt e istruzioni, massimo 6
+   modifiche alla scaletta per sessione
+2. **Guardia sull'input**: un LLM con output strutturato valuta prompt e
+   modifiche. In caso di errore del controllo la richiesta viene bloccata
+   (*fail-closed*)
+3. **Regole nel system prompt** di Outliner e Writer: se la richiesta le viola,
+   il modello risponde con il marcatore `[RIFIUTATO]` e il grafo lo intercetta
+4. **Safety settings nativi di Gemini** (se disponibili nella versione
+   installata di `langchain-google-genai`)
+5. **Guardia sull'output**: il testo finale viene controllato prima di essere
+   mostrato
+
+Sono bloccati contenuti violenti, degradanti o d'odio, istruzioni per costruire
+oggetti pericolosi, contenuti sessuali espliciti, autolesionismo, attività
+illegali, dati personali di privati e tentativi di aggirare le regole. Temi
+sensibili (storia, cronaca, scienza, prevenzione) restano ammessi a livello
+informativo, senza dettagli operativi replicabili.
+
+## Come funziona il flusso, passo per passo
+
+1. **Prompt**: l'utente descrive cosa vuole scrivere. `guard_input` controlla
+   la richiesta; se è accettata, `outliner` produce la scaletta (v1)
+2. **Pausa** (`review`): il grafo si ferma con `interrupt` e la UI mostra la
+   scaletta a destra
+3. **Modifiche**: l'utente scrive un'istruzione ("riassumi", "sposta la sezione
+   3 all'inizio"). L'istruzione torna a `guard_input` (valutata insieme
+   all'argomento originale) e poi a `outliner`, che restituisce l'intera
+   scaletta aggiornata. Si può ripetere fino a 6 volte
+4. **Approvazione**: con «Produci il testo» il `writer` scrive il testo in
+   Markdown seguendo la scaletta
+5. **Controllo finale**: `guard_output` verifica il testo; se è sicuro viene
+   mostrato e scaricabile in `.md`, altrimenti viene bloccato e resta visibile
+   la scaletta
+
+## Configurazione
+
+Le variabili vanno messe in `.streamlit/secrets.toml` (in alternativa come
+variabili d'ambiente):
+
+```toml
+GOOGLE_API_KEY = "..."
+GEMINI_MODELS = ["gemini-2.0-flash"]
+```
+
+`GEMINI_MODELS` è l'elenco dei modelli selezionabili nella sidebar; come
+variabile d'ambiente si scrive separato da virgole. Se manca, viene usato
+`gemini-2.0-flash`.
+
+## Limiti noti
+
+- Lo stato è in memoria: al riavvio del server le sessioni si perdono. Per la
+  persistenza si può sostituire `MemorySaver` con un checkpointer SQLite o
+  Postgres
+- La Guardia è un LLM e può dare falsi positivi o falsi negativi
 
 
 
