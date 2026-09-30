@@ -14,9 +14,10 @@ if "ROOT_DIR" not in st.session_state:
 
 home_page = st.Page("pages/0_Home.py", title="Home", default=True)
 rag_system_page = st.Page("pages/1_RAG.py", title="RAG: Retrieval Augmented Generation")
+langgraph_agents_page = st.Page("pages/4_LangGraph.py", title="LangGraph Agents - Assistenza scrittura")
 eu_ai_toolkit_page = st.Page("pages/3_EU_AI_Toolkit.py", title="Toolkit di Compliance GDPR / EU AI Act")
 eta_dashboard_page = st.Page("pages/2_ETA_Market.py", title="E-Commerce Sales: ETA, Dashboard")
 
-pg = st.navigation([home_page,rag_system_page, eu_ai_toolkit_page, eta_dashboard_page])
+pg = st.navigation([home_page,rag_system_page, langgraph_agents_page, eu_ai_toolkit_page, eta_dashboard_page])
 
 pg.run()
