@@ -39,9 +39,8 @@ projects = [
     {
         "title": "EU AI ACT Toolkit",
         "description": (
-            "NON costituisce parere legale, è uno strumento didattico di "
-            "supporto pensato per orientare una prima autovalutazione interna "
-            "tramite step guidati "
+            "Strumento didattico per una prima autovalutazione interna rispetto "
+            "all'AI Act, tramite step guidati. Non costituisce parere legale."
         ),
         "stack": "Streamlit",
         "page": "pages/3_EU_AI_Toolkit.py",
@@ -50,9 +49,9 @@ projects = [
     {
         "title": "E-Commerce Sales Dashboard",
         "description": (
-            "Pipeline end-to-end su dati di vendita e-commerce: pulizia "
-            "di un dataset sporco, analisi statistica e dashboard "
-            "interattiva per esplorare vendite, andamenti e metriche di business."
+            "Pipeline end-to-end su dati di vendita e-commerce: pulizia del "
+            "dataset, analisi statistica e dashboard interattiva per esplorare "
+            "vendite, andamenti e metriche di business."
         ),
         "stack": "Streamlit - Pandas - Plotly",
         "page": "pages/2_ETA_Market.py",
