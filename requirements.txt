@@ -8,10 +8,15 @@ pypdf>=5.0.0,<6.0.0
 
 # Blocco torch/torchvision: versioni allineate tra loro (build CPU-only)
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.6.0
-torchvision==0.21.0
+torch>=2.6.0
+torchvision>=0.21.0
 
 # Progetto 2
 pandas>=2.2.0,<3.0.0
 numpy>=1.26.0,<2.2.0
 plotly>=6.4.0,<7.0.0
+
+# Progetto 4
+langgraph>=0.2.0
+langchain-google-genai>=2.0.0
+langchain-core>=0.3.0
