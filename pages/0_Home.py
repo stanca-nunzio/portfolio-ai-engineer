@@ -26,6 +26,17 @@ projects = [
         "page_label": "RAG",
     },
     {
+        "title": "LangGraph Agents - Assistenza scrittura",
+        "description": (
+            "Assistente di scrittura con scaletta interattiva: descrivi cosa "
+            "vuoi scrivere, modifica la scaletta insieme al modello e genera "
+            "il testo finale. Include controlli di sicurezza su input e output."
+        ),
+        "stack": "Streamlit - LangGraph - Gemini API",
+        "page": "pages/4_LangGraph.py",
+        "page_label": "LangGraph",
+    },
+    {
         "title": "EU AI ACT Toolkit",
         "description": (
             "NON costituisce parere legale, è uno strumento didattico di "
