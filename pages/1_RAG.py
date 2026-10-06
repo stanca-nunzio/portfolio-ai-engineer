@@ -6,11 +6,17 @@ del server, evitando di ricalcolare embedding ad ogni domanda).
 """
 import os
 from pathlib import Path
+import pandas as pd
 import streamlit as st
 
+from rag_system.evaluate_retrieval import (
+    DEFAULT_KS, check_known, evaluate, indexed_chunk_keys, metrics_rows, parse_questions,
+)
 from rag_system.ingest import load_documents, chunk_text, list_source_files, preview_file, ensure_seed_documents
 from rag_system.vectorstore import index_chunks, search, collection_count
 from rag_system.llm import generate_answer, get_models
+
+EVAL_TEST_SET = "questions-test-set.csv"
 
 st.title("RAG")
 st.write(
@@ -75,7 +81,7 @@ st.caption(f"{n_docs} documenti indicizzati -  {n_chunks} chunk - {collection_co
 
 st.divider()
 
-tab_chat, tab_files = st.tabs(["Chat", "Files"])
+tab_chat, tab_files, tab_eval = st.tabs(["Chat", "Files", "Valutazione"])
 
 with tab_chat:
     question = st.text_area(
@@ -154,6 +160,80 @@ with tab_files:
                 st.text(preview_text)
             else:
                 st.warning("Impossibile generare l'anteprima per questo file.")
+
+with tab_eval:
+    st.write(
+        "Incolla il contenuto di un CSV con colonne `question`, `source`, `chunk_ids` "
+        "(id separati da spazio). Le domande vengono eseguite sull'indice corrente, "
+        "prima senza re-ranking e poi con il cross-encoder."
+    )
+    csv_text = st.text_area(
+        "CSV",
+        height=200,
+        placeholder="question;source;chunk_ids\nDomanda di esempio;documento.pdf;12 13",
+        key="eval_csv_text",
+    )
+
+    def run_evaluation(raw_csv: str, origin: str):
+        try:
+            questions = parse_questions(raw_csv)
+            check_known(questions, indexed_chunk_keys())
+            max_k = max(DEFAULT_KS)
+            with st.spinner(f"Eseguo {len(questions)} domande, con e senza re-ranking..."):
+                st.session_state["eval_result"] = evaluate(
+                    questions,
+                    lambda q, rerank: search(q, top_k=max_k, use_reranker=rerank),
+                    DEFAULT_KS,
+                )
+            st.session_state["eval_origin"] = origin
+        except ValueError as e:
+            st.session_state.pop("eval_result", None)
+            st.error(str(e))
+
+    col_pasted, col_file, _ = st.columns([1, 2, 3])
+    run_pasted = col_pasted.button("Esegui test", type="primary", key="eval_run")
+    run_file = col_file.button(f"Usa {EVAL_TEST_SET}", key="eval_run_file")
+
+    if run_pasted:
+        if not csv_text.strip():
+            st.warning("Incolla prima il contenuto del CSV (Formato 'question;source;chunk_ids')")
+        else:
+            run_evaluation(csv_text, "CSV incollato")
+    elif run_file:
+        test_set_path = Path(st.session_state["ROOT_DIR"]) / Path(st.secrets["RES_DIR"]) / EVAL_TEST_SET
+        if not test_set_path.exists():
+            st.error(f"File non trovato: {test_set_path}")
+        else:
+            run_evaluation(test_set_path.read_text(encoding="utf-8-sig"), EVAL_TEST_SET)
+
+    eval_result = st.session_state.get("eval_result")
+    if eval_result:
+        plain, reranked, ks = eval_result["plain"], eval_result["reranked"], eval_result["ks"]
+
+        st.subheader("Metriche")
+        st.caption(
+            f"Fonte: {st.session_state.get('eval_origin', '-')}. "
+            "Valore con re-ranking; la variazione e' rispetto alla ricerca senza re-ranking."
+        )
+        headline = ["mrr", "hit@4", "recall@4", "ndcg@4"]
+        for col, name in zip(st.columns(len(headline)), headline):
+            col.metric(name, f"{reranked[name]:.3f}", f"{reranked[name] - plain[name]:+.3f}")
+
+        metrics_df = pd.DataFrame(
+            metrics_rows(plain, reranked, ks),
+            columns=["metrica", "senza re-rank", "con re-rank", "delta"],
+        )
+        st.dataframe(metrics_df.round(3), hide_index=True, use_container_width=True)
+
+        st.subheader("Riepilogo per domanda")
+        summary_df = pd.DataFrame(eval_result["rows"])
+        st.dataframe(summary_df, hide_index=True, use_container_width=True)
+        st.download_button(
+            "Scarica rag_eval_results.csv",
+            data=summary_df.to_csv(index=False).encode("utf-8-sig"),
+            file_name="rag_eval_results.csv",
+            mime="text/csv",
+        )
 
 st.divider()
 st.page_link("pages/0_Home.py", label="Torna alla lista progetti")
