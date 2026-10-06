@@ -104,28 +104,31 @@ LLM_MODEL_ASK = "gemini-2.0-flash"
 pip install -r requirements.txt
 streamlit run app.py
 ```
-# Portfolio LangGraph - Assistente di scrittura con scaletta interattiva
 
-Progetto dimostrativo che mostra come costruire un agente con **LangGraph** e
-**Google Gemini** in cui l'utente resta nel ciclo (human-in-the-loop): il
-modello propone una scaletta, l'utente la modifica a piacere e solo dopo la sua
-approvazione viene scritto il testo completo. Ogni passaggio è protetto da
-controlli di sicurezza. Fa parte di un portfolio Streamlit multi-pagina.
 
-> **Nota**: i guardrail riducono i rischi ma nessuno è perfetto da solo. Il
-> progetto è dimostrativo e i testi generati da un modello di IA vanno sempre
-> verificati prima di essere usati.
+
+# Portfolio LangGraph - Assistente di Ricerca e Scrittura con Validazione Fonti
+
+Progetto dimostrativo che mostra come costruire un agente di ricerca e scrittura con **LangGraph** e
+**Google Gemini**, integrando lo strumento di ricerca Tavily API.Il flusso include un ciclo di approvazione 
+umana (human-in-the-loop): il modello pianifica la ricerca ed estrae le fonti, l'utente valuta, seleziona o
+richiede nuovi approfondimenti sulle fonti e, solo dopo l'approvazione finale, viene redatto il testo
+completo. Ogni passaggio è protetto da controlli di sicurezza multilivello.
+
+> **Nota**: ha scopi dimostrativi; i testi e le fonti generati vanno sempre verificati prima dell'uso 
+ufficial
 
 ## Cosa mostra il progetto
 
-1. **Grafo con pause**: il flusso si ferma in attesa dell'utente (`interrupt`)
-   e riparte con la sua scelta, grazie a un checkpointer che conserva lo stato
-2. **Più modelli con ruoli diversi**: Guardia, Outliner e Writer hanno system
-   prompt e temperature dedicati
-3. **Guardrail a più livelli**: limiti di input, moderazione con output
-   strutturato, regole nei prompt, safety settings nativi di Gemini
-4. **UI in streaming**: la pagina Streamlit mostra in tempo reale i passaggi
-   del grafo, compresi i controlli di sicurezza
+1. Grafo asincrono con pause iterative: Il flusso si interrompe (interrupt) per permettere all'utente 
+2. di filtrare le fonti web, assegnare priorità o richiedere raffinamenti prima della stesura. Il tutto
+3. è orchestrato da un checkpointer che preserva lo stato della sessione.
+2. Integrazione Search Engine (Tavily): L'agente genera query mirate, interroga il web, raccoglie i
+3. risultati ed estrae metadati utili (titolo, dominio, snippet).
+3. Controllo di qualità automatizzato (Evaluator): Un nodo valuta la copertura iniziale delle informazioni 
+4. e, se insufficiente, avvia autonomamente un secondo round di ricerca prima di passare la palla all'utente.
+4. Guardrail Fail-Closed: Un modulo di controllo (Guardia) analizza gli input utente e gli output finali
+5. tramite strutture dati tipizzate, bloccando immediatamente contenuti non conformi.
 
 ## I ruoli
 
@@ -141,54 +144,38 @@ controlli di sicurezza. Fa parte di un portfolio Streamlit multi-pagina.
 langgraph_agents/graph.py    grafo LangGraph: nodi, routing, guardrail,
         |                    funzioni start_session / resume_session
         v
-pages/4_LangGraph.py         UI Streamlit: prompt, modifica scaletta, testo finale
+pages/4_LangGraph.py         UI Streamlit: prompt, modifica fonti, testo finale
 ```
 
 Il grafo, con due pause per l'utente:
 
 ```
-START -> guard_input -(ok)-> outliner -> review   (PAUSA: l'utente decide)
-             |                              |
-        (bloccato)                  "refine" -> guard_input -> outliner -> review ...
-             v                              |
-        END / review                "write"  -> writer -> guard_output -> END
+START -> guard_input -> planner -> search -> evaluator -> PAUSA (Scelta Fonti / Refine)
+                                                            |
+       +------------------- "Cerca altre fonti" <-----------+ (Max 3 ricerche)
+       v
+ guard_input -> planner -> search -> evaluator -> PAUSA
+                                                            |
+                                                   "Approva e Scrivi"
+                                                            v
+                                                   writer -> guard_output -> END
 ```
+## I Ruoli e la Configurazione dei Modelli
 
-## Guardrail
+- Guardia	0.0	Moderatore rigoroso: valida i testi in ingresso e l'output finale prima della visualizzazione.
+- Planner	0.2	Analizza il prompt o il feedback per generare stringhe di ricerca efficaci per Tavily.
+- Evaluator	0.2	Analizza la qualità e completezza delle fonti raccolte nel primo step automatico.
+- Writer	0.5	Redige l'articolo finale in Markdown, inserendo citazioni numeriche ancorate alle sole fonti approvate.
 
-1. **Limiti**: massimo 2000 caratteri per prompt e istruzioni, massimo 6
-   modifiche alla scaletta per sessione
-2. **Guardia sull'input**: un LLM con output strutturato valuta prompt e
-   modifiche. In caso di errore del controllo la richiesta viene bloccata
-   (*fail-closed*)
-3. **Regole nel system prompt** di Outliner e Writer: se la richiesta le viola,
-   il modello risponde con il marcatore `[RIFIUTATO]` e il grafo lo intercetta
-4. **Safety settings nativi di Gemini** (se disponibili nella versione
-   installata di `langchain-google-genai`)
-5. **Guardia sull'output**: il testo finale viene controllato prima di essere
-   mostrato
+## Guardrail e limiti
+Massimo 3 ricerche complessive per evitare loop infiniti e consumi di quota API.
+Il Writer utilizza al massimo 8 fonti tra quelle approvate, dando precedenza assoluta a quelle contrassegnate come prioritarie.
+
 
 Sono bloccati contenuti violenti, degradanti o d'odio, istruzioni per costruire
-oggetti pericolosi, contenuti sessuali espliciti, autolesionismo, attività
-illegali, dati personali di privati e tentativi di aggirare le regole. Temi
+oggetti pericolosi, attività illegali e tentativi di aggirare le regole. Temi
 sensibili (storia, cronaca, scienza, prevenzione) restano ammessi a livello
 informativo, senza dettagli operativi replicabili.
-
-## Come funziona il flusso, passo per passo
-
-1. **Prompt**: l'utente descrive cosa vuole scrivere. `guard_input` controlla
-   la richiesta; se è accettata, `outliner` produce la scaletta (v1)
-2. **Pausa** (`review`): il grafo si ferma con `interrupt` e la UI mostra la
-   scaletta a destra
-3. **Modifiche**: l'utente scrive un'istruzione ("riassumi", "sposta la sezione
-   3 all'inizio"). L'istruzione torna a `guard_input` (valutata insieme
-   all'argomento originale) e poi a `outliner`, che restituisce l'intera
-   scaletta aggiornata. Si può ripetere fino a 6 volte
-4. **Approvazione**: con «Produci il testo» il `writer` scrive il testo in
-   Markdown seguendo la scaletta
-5. **Controllo finale**: `guard_output` verifica il testo; se è sicuro viene
-   mostrato e scaricabile in `.md`, altrimenti viene bloccato e resta visibile
-   la scaletta
 
 ## Configurazione
 
@@ -198,6 +185,7 @@ variabili d'ambiente):
 ```toml
 GOOGLE_API_KEY = "..."
 GEMINI_MODELS = ["gemini-2.0-flash"]
+TAVILY_API_KEY = "tvly-..."
 ```
 
 `GEMINI_MODELS` è l'elenco dei modelli selezionabili nella sidebar; come
@@ -206,10 +194,9 @@ variabile d'ambiente si scrive separato da virgole. Se manca, viene usato
 
 ## Limiti noti
 
-- Lo stato è in memoria: al riavvio del server le sessioni si perdono. Per la
-  persistenza si può sostituire `MemorySaver` con un checkpointer SQLite o
-  Postgres
+- Lo stato è in memoria: al riavvio del server le sessioni si perdono
 - La Guardia è un LLM e può dare falsi positivi o falsi negativi
+- La qualità degli snippet visualizzati nella UI dipende interamente dai dati di pulizia restituiti dall'API di Tavily
 
 
 
